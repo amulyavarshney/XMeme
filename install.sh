@@ -5,7 +5,7 @@
 
 sudo apt-get install -y python3
 sudo apt install -y python3-pip
-pip3 install -r backend/requirements.txt
+/usr/bin/pip3 install -r backend/requirements.txt
 
 
 # Any configuration related commands
