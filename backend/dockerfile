@@ -1,0 +1,14 @@
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.9.1
+
+RUN apt-get update && apt-get install -y python3-dev build-essential
+WORKDIR /backend
+
+COPY requirements.txt .
+
+RUN pip install -r requirements.txt
+
+COPY . .
+
+EXPOSE 8081
+
+CMD ["uvicorn", "--host", "localhost", "--port", "8081", "src.main:app"]
