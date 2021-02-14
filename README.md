@@ -1,3 +1,12 @@
+# FRONTEND
+
+using HTML, CSS and JAVASCRIPT
+
+# BACKEND
+
+using python and FASTAPI
+* **requirements.txt** contains all the depenndencies.
+
 # Build the Docker image for FastAPI (backend)
 
 * Go to the backend directory.
