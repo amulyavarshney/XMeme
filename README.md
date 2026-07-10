@@ -1,45 +1,86 @@
-# FRONTEND
+# XMeme
 
-using HTML, CSS and JAVASCRIPT
+A meme stream platform for posting, browsing, and editing memes.
 
-# BACKEND
+Drop an image URL, add a caption, and share it with the feed. Built with a FastAPI backend and a lightweight vanilla frontend.
 
-using python and FASTAPI
-* **requirements.txt** contains all the depenndencies.
+## Stack
 
-# Build the Docker image for FastAPI (backend)
+| Layer | Tech |
+|-------|------|
+| Frontend | HTML, CSS, JavaScript |
+| Backend | Python, FastAPI, SQLAlchemy |
+| Database | SQLite (`backend/xmeme.db`) |
 
-* Go to the backend directory.
+## Quick start
 
-* Run the following command to build the FastAPI image:
+### Backend
 
-`docker build -t fastapi-image:v1 .`
+```bash
+cd backend
+python3 -m pip install -r requirements.txt
+python3 app.py
+```
 
-* You can confirm that this has worked by running the command:
+- API: http://localhost:8081
+- Swagger UI: http://localhost:8081/
+- ReDoc: http://localhost:8081/doc
 
-`docker images`
+### Frontend
 
-## Start the Docker container
+Serve the `frontend` folder (opening `index.html` via `file://` may block API calls):
 
-* Run a container based on the image:
+```bash
+cd frontend
+python3 -m http.server 8000
+```
 
-`docker run -d --name backend-container -p 8081:8081 fastapi-image:v1`
+Open http://localhost:8000 — the UI expects the API on port `8081`.
 
+## API
 
-# Build the Docker Image for the HTML Server (frontend)
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/memes` | Create a meme (`name`, `url`, `caption`) |
+| `GET` | `/memes` | List all memes |
+| `GET` | `/memes/{id}` | Get one meme |
+| `PATCH` | `/memes/{id}` | Update `url` and/or `caption` |
 
-* Go to the frontend directory.
+Duplicate posts (same name + url + caption) return `409`.
 
-* Run the following command to build the server image:
+## Docker
 
-`docker build -t html-server-image:v1 .`
+### Backend
 
-* You can confirm that this has worked by running the command:
+```bash
+cd backend
+docker build -t xmeme-api:v1 .
+docker run -d --name xmeme-api -p 8081:8081 xmeme-api:v1
+```
 
-`docker images`
+### Frontend
 
-## Start the Docker container
+```bash
+cd frontend
+docker build -t xmeme-web:v1 .
+docker run -d --name xmeme-web -p 80:80 xmeme-web:v1
+```
 
-* Run the following command to run the HTML container server:
+## Project layout
 
-`docker run -d --name frontend-container -p 80:80 html-server-image:v1`
+```
+XMeme/
+├── backend/          # FastAPI app
+│   ├── app.py        # Dev server entry
+│   ├── src/          # Routes, models, CRUD
+│   └── requirements.txt
+└── frontend/         # Static UI
+    ├── index.html
+    ├── app.js
+    ├── style.css
+    └── images/
+```
+
+## License
+
+Personal project — use and extend as you like.

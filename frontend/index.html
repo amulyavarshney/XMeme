@@ -1,115 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>XMeme</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Adding bootstrap link and css -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
-    integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <meta name="description" content="XMeme — create, post, and share memes with the world.">
+  <title>XMeme</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-  <!-- Header - Navbar-->
-  <header>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light" style="height: 80px;">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="#"><img src="images/logo.png" style="width: 50px; height: 50px;"
-            alt="" width="30" height="24" class="d-inline-block align-top"></a>
-        <!-- <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
-          aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button> -->
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">XMeme</div>
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item">
-            <a class="nav-link" href="http://localhost:8081">Swagger UI</a>
-          </li>
-        </ul>
-      </div>
+  <div class="page-bg" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="/">
+      <img src="images/logo.png" alt="" width="40" height="40">
+      <span>XMeme</span>
+    </a>
+    <nav class="site-nav">
+      <a href="#stream">Stream</a>
+      <a href="http://localhost:8081" target="_blank" rel="noopener">API Docs</a>
     </nav>
   </header>
-  <div class="card text-center" style="background: url('images/bg.jpg');">
-    <h1 style="color: brown; padding: .3em; font-family: cursive; font-style: oblique;">MEME STREAM</h1>
-    <div>
-      <h4 style="color: crimson;">Enter the details to post your meme</h4>
-    </div>
-    <!-- Form to post meme -->
-    <form action="./index.html" id="meme-submission" style="margin-right: 20px;">
-      <br>
-      <!-- name input -->
-      <div class="row mb-3">
-        <label for="owner_name" class="col-sm-2 col-form-label" style="color: brown; font-family: cursive; font-weight: bolder; font-size: larger;">Name<span style="color: red;">*</span></label>
-        <div class="col-sm-10">
-          <input type="text" class="form-control" id="owner_name" placeholder="Enter your full name" required>
+
+  <main>
+    <section class="hero">
+      <p class="hero-brand">XMeme</p>
+      <h1>Post it. Share it. Make it viral.</h1>
+      <p class="hero-sub">Drop a meme URL, add a caption, and send it into the stream.</p>
+    </section>
+
+    <section class="composer" aria-labelledby="composer-title">
+      <h2 id="composer-title">New meme</h2>
+      <form id="meme-form" novalidate>
+        <label>
+          <span>Name <abbr title="required">*</abbr></span>
+          <input type="text" id="owner_name" name="name" placeholder="Your name" required autocomplete="name">
+        </label>
+        <label>
+          <span>Meme URL <abbr title="required">*</abbr></span>
+          <input type="url" id="meme_url" name="url" placeholder="https://example.com/meme.jpg" required>
+        </label>
+        <label>
+          <span>Caption <abbr title="required">*</abbr></span>
+          <input type="text" id="caption" name="caption" placeholder="Something witty…" required maxlength="280">
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Post meme</button>
+          <button type="reset" class="btn btn-ghost">Reset</button>
         </div>
-      </div>
-
-      <!-- meme url input -->
-      <div class="row mb-3">
-        <label for="meme_url" class="col-sm-2 col-form-label" style="color: brown; font-family: cursive; font-weight: bolder; font-size: larger;">Meme URL<span style="color: red;">*</span></label>
-        <div class="col-sm-10">
-          <input type="url" class="form-control" id="meme_url" placeholder="Enter the image address of your meme" required>
-        </div>
-      </div>
-
-      <!-- caption input-->
-      <div class="row mb-3">
-        <label for="caption" class="col-sm-2 col-form-label" style="color: brown; font-family: cursive; font-weight: bolder; font-size: larger;">Meme Caption<span style="color: red;">*</span></label>
-        <div class="col-sm-10">
-          <input type="text" class="form-control" id="caption" placeholder="Be creative with the caption" required>
-        </div>
-      </div>
-
-      <!-- Reset and Submit button -->
-      <input type="submit" value="Post Meme" class="btn btn-success" style="margin: 10px; background-color: brown;">
-      <input type="reset" value="Reset" class ="btn btn-success" style="margin: 10px; background-color: brown;">
-    </form>
-  </div>
-
-  <!-- Displaying form to post memes -->
-  <div class="card text-center" id="display-container">
-  </div>
-
-  <!-- Script to handle api and show list of posted memes -->
-  <script src="index.js"></script>
-  <script>getMemeList();</script>
-
-  <!-- Modal section -->
-  <!-- Pop up form to update/edit a meme -->
-  <div class="bg-modal">
-    <div class="modal-content">
-      <div class="close" id="closeButton">+</div>
-      <h3 style="margin-top: 20px; margin-bottom: 20px; text-align: center; color: rgb(77, 0, 0); font-family: cursive;">Change the details</h3>
-      <form id="update-form" action="#">
-        <div class="form-floating" style="width: 450px; margin-left: 130px;">
-          <input type="url" class="form-control" id="floatingPassword" placeholder="Password">
-          <label for="floatingPassword">Enter new URL</label>
-        </div>
-        <div class="form-floating mb-3" style="width: 450px; margin-left: 130px;">
-          <input type="text" class="form-control" id="floatingInput" placeholder="name@example.com">
-          <label for="floatingInput">Enter new Caption</label>
-        </div>
-
-        <input type="submit" data-id="" id="submit-edit" onclick="patch()" value="Edit Meme" class="btn btn-success"
-          style="margin-left: 300px; margin-top: 20px; color: white; background-color: brown; width: fit-content;">
-        <input type="reset" value="Reset" class ="btn btn-success" style="margin-top: 20px; color: white; background-color: brown; width: fit-content;">
+        <p id="form-status" class="form-status" role="status" aria-live="polite"></p>
       </form>
-    </div>
-  </div>
-  <!-- Script to handle api to update meme -->
-  <script src="patch.js"></script>
+    </section>
 
-  <footer>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light" style="height: 80px;">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="https://gitlab.crio.do/COHORT_ME_BUILDOUT_XMEME_ENROLL_1612436694845/amulyavarshney7-me_buildout_xmeme">
-          <img src="images/gitlab.png" style="width: 50px; height: 50px;" alt="" width="30" height="24" class="d-inline-block align-top"></a>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">Created by Amulya Varshney</div>
+    <section class="stream" id="stream" aria-labelledby="stream-title">
+      <div class="stream-header">
+        <h2 id="stream-title">Meme stream</h2>
+        <button type="button" class="btn btn-ghost btn-sm" id="refresh-btn">Refresh</button>
       </div>
-    </nav>
+      <div id="meme-grid" class="meme-grid" aria-busy="true">
+        <p class="empty-state">Loading memes…</p>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="edit-dialog" class="edit-dialog">
+    <form id="edit-form" method="dialog">
+      <header>
+        <h2>Edit meme</h2>
+        <button type="button" class="dialog-close" id="edit-close" aria-label="Close">&times;</button>
+      </header>
+      <label>
+        <span>New URL</span>
+        <input type="url" id="edit_url" name="url" placeholder="https://example.com/meme.jpg">
+      </label>
+      <label>
+        <span>New caption</span>
+        <input type="text" id="edit_caption" name="caption" placeholder="Updated caption" maxlength="280">
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="edit-submit">Save changes</button>
+        <button type="button" class="btn btn-ghost" id="edit-cancel">Cancel</button>
+      </div>
+      <p id="edit-status" class="form-status" role="status" aria-live="polite"></p>
+    </form>
+  </dialog>
+
+  <footer class="site-footer">
+    <p><strong>XMeme</strong> — meme stream for creators</p>
   </footer>
+
+  <script src="app.js" defer></script>
 </body>
 </html>

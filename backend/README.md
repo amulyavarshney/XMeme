@@ -1,24 +1,44 @@
-This is the Application Backend.
+# XMeme Backend
 
-* **SQLAlchemy** models (independent of Flask extensions, so they can be used with Celery workers directly).
-* **CORS** (Cross Origin Resource Sharing).
-* **REST API** for get, post and patch requests.
-* **Swagger UI** Documentation provide by Swagger UI using endpoint `/`
-* **DOCUMENTATION** interactive API doc using endpoint `/doc`
+FastAPI service for creating, listing, and updating memes.
 
-## Local Run
+## Features
+
+- REST API for memes (`POST`, `GET`, `PATCH`)
+- SQLAlchemy + SQLite persistence
+- CORS enabled for local frontend development
+- Swagger UI at `/` and ReDoc at `/doc`
+
+## Local run
 
 ```bash
 cd backend
+python3 -m pip install -r requirements.txt
 python3 app.py
 ```
 
-## Deployment
+Server listens on `http://0.0.0.0:8081`.
 
-After signing up on Heroku, create a new app, and proceed to download Heroku CLI
+## Endpoints
 
-```bash
-heroku login -i
-heroku builds:create -a varamu-xmeme
+| Method | Path | Notes |
+|--------|------|-------|
+| `POST` | `/memes` | Body: `{ "name", "url", "caption" }` → `{ "id" }` |
+| `GET` | `/memes` | Returns all memes |
+| `GET` | `/memes/{id}` | Single meme or `404` |
+| `PATCH` | `/memes/{id}` | Partial update of `url` / `caption` |
+
+## Structure
+
 ```
-Running on Python web server using Uvicorn and Gunicorn.
+backend/
+├── app.py              # Uvicorn entrypoint
+├── requirements.txt
+├── xmeme.db            # SQLite database
+└── src/
+    ├── main.py         # FastAPI routes
+    ├── models.py       # SQLAlchemy models
+    ├── schemas.py      # Pydantic schemas
+    ├── crud.py         # Database helpers
+    └── database.py     # Engine & session
+```
