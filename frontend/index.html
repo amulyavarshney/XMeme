@@ -3,94 +3,63 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="XMeme — create, post, and share memes with the world.">
+  <meta name="description" content="XMeme — create, share, and discover memes.">
   <title>XMeme</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
   <div class="page-bg" aria-hidden="true"></div>
 
   <header class="site-header">
-    <a class="brand" href="/">
+    <a class="brand" href="#/">
       <img src="images/logo.png" alt="" width="40" height="40">
       <span>XMeme</span>
     </a>
-    <nav class="site-nav">
-      <a href="#stream">Stream</a>
-      <a href="http://localhost:8081" target="_blank" rel="noopener">API Docs</a>
+    <nav class="site-nav" id="site-nav">
+      <a href="#/">Stream</a>
+      <a href="#/trending">Trending</a>
+      <a href="#/create">Create</a>
+      <a href="#/login" data-auth="guest">Log in</a>
+      <a href="#/register" data-auth="guest">Sign up</a>
+      <a href="#/profile" data-auth="user" class="nav-user" hidden></a>
+      <button type="button" class="btn btn-ghost btn-sm" id="logout-btn" data-auth="user" hidden>Log out</button>
     </nav>
   </header>
 
-  <main>
-    <section class="hero">
-      <p class="hero-brand">XMeme</p>
-      <h1>Post it. Share it. Make it viral.</h1>
-      <p class="hero-sub">Drop a meme URL, add a caption, and send it into the stream.</p>
-    </section>
+  <main id="app" class="app" aria-live="polite"></main>
 
-    <section class="composer" aria-labelledby="composer-title">
-      <h2 id="composer-title">New meme</h2>
-      <form id="meme-form" novalidate>
-        <label>
-          <span>Name <abbr title="required">*</abbr></span>
-          <input type="text" id="owner_name" name="name" placeholder="Your name" required autocomplete="name">
-        </label>
-        <label>
-          <span>Meme URL <abbr title="required">*</abbr></span>
-          <input type="url" id="meme_url" name="url" placeholder="https://example.com/meme.jpg" required>
-        </label>
-        <label>
-          <span>Caption <abbr title="required">*</abbr></span>
-          <input type="text" id="caption" name="caption" placeholder="Something witty…" required maxlength="280">
-        </label>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary">Post meme</button>
-          <button type="reset" class="btn btn-ghost">Reset</button>
-        </div>
-        <p id="form-status" class="form-status" role="status" aria-live="polite"></p>
-      </form>
-    </section>
-
-    <section class="stream" id="stream" aria-labelledby="stream-title">
-      <div class="stream-header">
-        <h2 id="stream-title">Meme stream</h2>
-        <button type="button" class="btn btn-ghost btn-sm" id="refresh-btn">Refresh</button>
-      </div>
-      <div id="meme-grid" class="meme-grid" aria-busy="true">
-        <p class="empty-state">Loading memes…</p>
-      </div>
-    </section>
-  </main>
+  <footer class="site-footer">
+    <p><strong>XMeme</strong> — create, share, go viral</p>
+  </footer>
 
   <dialog id="edit-dialog" class="edit-dialog">
-    <form id="edit-form" method="dialog">
+    <form id="edit-form">
       <header>
         <h2>Edit meme</h2>
         <button type="button" class="dialog-close" id="edit-close" aria-label="Close">&times;</button>
       </header>
       <label>
         <span>New URL</span>
-        <input type="url" id="edit_url" name="url" placeholder="https://example.com/meme.jpg">
+        <input type="url" id="edit_url" placeholder="https://…">
       </label>
       <label>
         <span>New caption</span>
-        <input type="text" id="edit_caption" name="caption" placeholder="Updated caption" maxlength="280">
+        <input type="text" id="edit_caption" maxlength="280" placeholder="Updated caption">
       </label>
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary" id="edit-submit">Save changes</button>
+        <button type="submit" class="btn btn-primary">Save</button>
         <button type="button" class="btn btn-ghost" id="edit-cancel">Cancel</button>
       </div>
-      <p id="edit-status" class="form-status" role="status" aria-live="polite"></p>
+      <p id="edit-status" class="form-status" role="status"></p>
     </form>
   </dialog>
 
-  <footer class="site-footer">
-    <p><strong>XMeme</strong> — meme stream for creators</p>
-  </footer>
-
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="editor.js"></script>
   <script src="app.js" defer></script>
 </body>
 </html>
