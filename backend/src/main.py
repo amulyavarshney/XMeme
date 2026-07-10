@@ -6,7 +6,7 @@ from .config import get_settings
 from .database import Base, engine
 from .migrate import migrate
 from .seed import seed_templates
-from .routers import auth, memes, share, upload, users
+from .routers import auth, discover, memes, share, upload, users
 
 settings = get_settings()
 
@@ -17,7 +17,7 @@ seed_templates()
 app = FastAPI(
     title=settings.app_name,
     description="Create, share, and discover memes.",
-    version="2.0.0",
+    version="2.1.0",
     docs_url="/",
     redoc_url="/doc",
 )
@@ -36,6 +36,7 @@ app.include_router(auth.router)
 app.include_router(memes.router)
 app.include_router(upload.router)
 app.include_router(users.router)
+app.include_router(discover.router)
 app.include_router(share.router)
 
 

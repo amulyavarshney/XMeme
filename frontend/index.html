@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <div class="page-bg" aria-hidden="true"></div>
@@ -21,10 +21,13 @@
     <nav class="site-nav" id="site-nav">
       <a href="#/">Stream</a>
       <a href="#/trending">Trending</a>
+      <a href="#/following">Following</a>
       <a href="#/create">Create</a>
+      <a href="#/notifications" data-auth="user" hidden>Alerts</a>
       <a href="#/login" data-auth="guest">Log in</a>
       <a href="#/register" data-auth="guest">Sign up</a>
       <a href="#/profile" data-auth="user" class="nav-user" hidden></a>
+      <button type="button" class="btn btn-ghost btn-sm" id="theme-btn" title="Toggle theme">Theme</button>
       <button type="button" class="btn btn-ghost btn-sm" id="logout-btn" data-auth="user" hidden>Log out</button>
     </nav>
   </header>
@@ -60,6 +63,8 @@
   <script src="config.js"></script>
   <script src="api.js"></script>
   <script src="editor.js"></script>
+  <script src="create-page.js"></script>
   <script src="app.js" defer></script>
+  <script src="embed.js" defer></script>
 </body>
 </html>

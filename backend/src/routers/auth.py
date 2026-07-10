@@ -16,6 +16,15 @@ from ..database import get_db
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
+def _me_payload(db: Session, user: models.User) -> schemas.UserMe:
+    profile = crud.get_user_profile(db, user.username, user)
+    return schemas.UserMe(
+        **profile.model_dump(),
+        email=user.email,
+        onboarding_done=bool(user.onboarding_done),
+    )
+
+
 @router.post("/register", response_model=schemas.UserMe, status_code=201)
 def register(payload: schemas.UserCreate, db: Session = Depends(get_db)):
     if get_user_by_username(db, payload.username):
@@ -32,8 +41,7 @@ def register(payload: schemas.UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-    profile = crud.get_user_profile(db, user.username)
-    return schemas.UserMe(**profile.model_dump(), email=user.email)
+    return _me_payload(db, user)
 
 
 @router.post("/login", response_model=schemas.Token)
@@ -53,8 +61,7 @@ def login(
 
 @router.get("/me", response_model=schemas.UserMe)
 def me(user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
-    profile = crud.get_user_profile(db, user.username)
-    return schemas.UserMe(**profile.model_dump(), email=user.email)
+    return _me_payload(db, user)
 
 
 @router.patch("/me", response_model=schemas.UserMe)
@@ -63,10 +70,10 @@ def update_me(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if payload.bio is not None:
-        user.bio = payload.bio
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-    profile = crud.get_user_profile(db, user.username)
-    return schemas.UserMe(**profile.model_dump(), email=user.email)
+    data = payload.model_dump(exclude_unset=True)
+    for key, value in data.items():
+        setattr(user, key, value)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return _me_payload(db, user)

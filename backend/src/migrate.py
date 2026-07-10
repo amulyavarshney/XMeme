@@ -4,6 +4,40 @@ from sqlalchemy import inspect, text
 
 from .database import engine
 
+MEME_COLUMNS = {
+    "user_id": "INTEGER",
+    "created_at": "DATETIME",
+    "updated_at": "DATETIME",
+    "view_count": "INTEGER DEFAULT 0",
+    "share_count": "INTEGER DEFAULT 0",
+    "download_count": "INTEGER DEFAULT 0",
+    "status": "VARCHAR(20) DEFAULT 'published'",
+    "visibility": "VARCHAR(20) DEFAULT 'public'",
+    "editor_state": "TEXT DEFAULT ''",
+    "media_type": "VARCHAR(20) DEFAULT 'image'",
+    "tags_raw": "VARCHAR(255) DEFAULT ''",
+}
+
+USER_COLUMNS = {
+    "is_private": "BOOLEAN DEFAULT 0",
+    "onboarding_done": "BOOLEAN DEFAULT 0",
+}
+
+TEMPLATE_COLUMNS = {
+    "category": "VARCHAR(50) DEFAULT 'blank'",
+    "user_id": "INTEGER",
+    "is_public": "BOOLEAN DEFAULT 1",
+    "created_at": "DATETIME",
+}
+
+COMMENT_COLUMNS = {
+    "parent_id": "INTEGER",
+}
+
+
+def _has_table(table: str) -> bool:
+    return table in inspect(engine).get_table_names()
+
 
 def _has_column(table: str, column: str) -> bool:
     insp = inspect(engine)
@@ -12,36 +46,29 @@ def _has_column(table: str, column: str) -> bool:
     return any(col["name"] == column for col in insp.get_columns(table))
 
 
-def migrate():
+def _add_missing(table: str, columns: dict):
     with engine.begin() as conn:
-        if _has_table("memes"):
-            alters = []
-            if not _has_column("memes", "user_id"):
-                alters.append("ALTER TABLE memes ADD COLUMN user_id INTEGER")
-            if not _has_column("memes", "created_at"):
-                alters.append("ALTER TABLE memes ADD COLUMN created_at DATETIME")
-            if not _has_column("memes", "updated_at"):
-                alters.append("ALTER TABLE memes ADD COLUMN updated_at DATETIME")
-            if not _has_column("memes", "view_count"):
-                alters.append("ALTER TABLE memes ADD COLUMN view_count INTEGER DEFAULT 0")
-            for stmt in alters:
-                conn.execute(text(stmt))
-            conn.execute(
-                text(
-                    "UPDATE memes SET created_at = CURRENT_TIMESTAMP "
-                    "WHERE created_at IS NULL"
-                )
-            )
-            conn.execute(
-                text(
-                    "UPDATE memes SET updated_at = CURRENT_TIMESTAMP "
-                    "WHERE updated_at IS NULL"
-                )
-            )
-            conn.execute(
-                text("UPDATE memes SET view_count = 0 WHERE view_count IS NULL")
-            )
+        for name, ddl in columns.items():
+            if not _has_column(table, name):
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
 
 
-def _has_table(table: str) -> bool:
-    return table in inspect(engine).get_table_names()
+def migrate():
+    if _has_table("memes"):
+        _add_missing("memes", MEME_COLUMNS)
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE memes SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL"))
+            conn.execute(text("UPDATE memes SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL"))
+            conn.execute(text("UPDATE memes SET view_count = 0 WHERE view_count IS NULL"))
+            conn.execute(text("UPDATE memes SET share_count = 0 WHERE share_count IS NULL"))
+            conn.execute(text("UPDATE memes SET download_count = 0 WHERE download_count IS NULL"))
+            conn.execute(text("UPDATE memes SET status = 'published' WHERE status IS NULL OR status = ''"))
+            conn.execute(text("UPDATE memes SET visibility = 'public' WHERE visibility IS NULL OR visibility = ''"))
+            conn.execute(text("UPDATE memes SET media_type = 'image' WHERE media_type IS NULL OR media_type = ''"))
+    if _has_table("users"):
+        _add_missing("users", USER_COLUMNS)
+    if _has_table("templates"):
+        _add_missing("templates", TEMPLATE_COLUMNS)
+        # Drop unique name constraint isn't easy on SQLite; allow duplicate names via app logic for user templates
+    if _has_table("comments"):
+        _add_missing("comments", COMMENT_COLUMNS)

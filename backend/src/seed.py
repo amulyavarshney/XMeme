@@ -13,36 +13,42 @@ DEFAULT_TEMPLATES = [
     {
         "name": "Blank Canvas",
         "slug": "blank",
+        "category": "blank",
         "remote": None,
         "description": "Start from a clean slate",
     },
     {
         "name": "Drake",
         "slug": "drake",
+        "category": "reaction",
         "remote": "https://i.imgflip.com/30b1gx.jpg",
         "description": "Classic reject / approve format",
     },
     {
         "name": "Distracted Boyfriend",
         "slug": "distracted",
+        "category": "reaction",
         "remote": "https://i.imgflip.com/1ur9b0.jpg",
         "description": "Looking at something new",
     },
     {
         "name": "Two Buttons",
         "slug": "buttons",
+        "category": "workplace",
         "remote": "https://i.imgflip.com/1g8my4.jpg",
         "description": "Hard choices",
     },
     {
         "name": "Change My Mind",
         "slug": "change-my-mind",
+        "category": "politics",
         "remote": "https://i.imgflip.com/24y43o.jpg",
         "description": "Hot take table",
     },
     {
         "name": "Expanding Brain",
         "slug": "brain",
+        "category": "reaction",
         "remote": "https://i.imgflip.com/1jwhww.jpg",
         "description": "Ascending enlightenment",
     },
@@ -90,6 +96,7 @@ def seed_templates():
                 row = existing[item["name"]]
                 row.image_url = image_url
                 row.description = item["description"]
+                row.category = item.get("category", "blank")
                 db.add(row)
             else:
                 db.add(
@@ -97,6 +104,8 @@ def seed_templates():
                         name=item["name"],
                         image_url=image_url,
                         description=item["description"],
+                        category=item.get("category", "blank"),
+                        is_public=True,
                     )
                 )
         db.commit()

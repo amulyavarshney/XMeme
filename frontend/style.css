@@ -641,3 +641,86 @@ code {
     font-size: 0.82rem;
   }
 }
+
+/* Advanced editor + discovery + dark mode */
+.search-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  max-width: 420px;
+}
+.search-bar input { flex: 1; }
+.chip-row, .reaction-row, .tag-row, .sticker-bar, .filter-row, .toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.75rem 0;
+}
+.chip, .sticker {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+.chip.active, .sticker:hover { border-color: var(--teal); color: var(--teal-deep); }
+.tag { font-size: 0.85rem; margin-right: 0.35rem; }
+.toolbar-row { align-items: center; }
+.file-btn { position: relative; overflow: hidden; }
+.layer-panel {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fafcfd;
+  margin: 0.75rem 0;
+}
+.layer-panel textarea, .layer-panel select {
+  width: 100%;
+  font: inherit;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+.editor-section { margin-top: 1rem; }
+.editor-section h3 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+.template-card-wrap { position: relative; }
+.template-card-wrap .fav-btn { position: absolute; top: 6px; right: 6px; }
+.create-layout.advanced { grid-template-columns: 1fr; }
+@media (min-width: 980px) {
+  .create-layout.advanced {
+    grid-template-columns: minmax(280px, 360px) minmax(320px, 1fr);
+  }
+  .create-layout.advanced .templates-panel { grid-column: 1 / -1; }
+}
+#meme-canvas { touch-action: none; max-height: 70vh; }
+.card-media video { width: 100%; display: block; background: #111; }
+.comment.unread { border-color: var(--teal); }
+html[data-theme="dark"] {
+  --ink: #eef2f7;
+  --ink-soft: #b7c0ce;
+  --paper: #0f141b;
+  --surface: #171d27;
+  --line: #2a3342;
+  --shadow: 0 12px 40px rgba(0,0,0,0.35);
+}
+html[data-theme="dark"] .page-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(15,159,138,0.16), transparent 55%),
+    linear-gradient(180deg, #10151d, #0f141b 50%, #121820);
+}
+html[data-theme="dark"] input,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] select,
+html[data-theme="dark"] .layer-panel,
+html[data-theme="dark"] .comment,
+html[data-theme="dark"] .template-card {
+  background: #121821;
+  color: var(--ink);
+}
