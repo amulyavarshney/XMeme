@@ -140,6 +140,11 @@ window.CreatePage = {
     };
 
     MemeEditor.init(canvas, syncLayerPanel);
+    if (!editingMemeId) {
+      MemeEditor.reset(true);
+      window.__videoUrl = null;
+      mediaType = "image";
+    }
     document.getElementById("sticker-bar").innerHTML = MemeEditor.STICKERS.map(
       (e) => `<button type="button" class="sticker" data-emoji="${e}">${e}</button>`
     ).join("");
@@ -226,14 +231,17 @@ window.CreatePage = {
         const uploaded = await API.upload(file);
         mediaType = uploaded.media_type || "image";
         if (mediaType === "video") {
-          setStatus(status, "Video saved. Overlay editor uses a poster frame — publish uses the video file.", "success");
-          // still try to load as image may fail; keep url for publish
+          setStatus(
+            status,
+            "Video loaded. Overlay editing isn’t burned into video yet — publish uses the original video file. Prefer an image for text/stickers.",
+            "success"
+          );
           window.__videoUrl = uploaded.url;
         } else {
           window.__videoUrl = null;
           await MemeEditor.loadImage(uploaded.url);
+          setStatus(status, "Media loaded.", "success");
         }
-        setStatus(status, "Media loaded.", "success");
       } catch (err) {
         setStatus(status, err.message, "error");
       }
@@ -244,12 +252,15 @@ window.CreatePage = {
         setStatus(status, asDraft ? "Saving draft…" : "Publishing…");
         let url = window.__videoUrl;
         let type = mediaType;
-        if (!url) {
+        if (url && type === "video") {
+          // Keep original video; overlays are saved in editor_state for later studio work
+        } else {
           const blob = await MemeEditor.toBlob();
           const file = new File([blob], "meme.png", { type: "image/png" });
           const uploaded = await API.upload(file);
           url = uploaded.url;
           type = "image";
+          window.__videoUrl = null;
         }
         const tags = document
           .getElementById("publish-tags")
@@ -388,9 +399,9 @@ window.CreatePage = {
       }
     };
 
-    window.addEventListener(
-      "keydown",
-      (e) => {
+    if (!window.__xmemeEditorKeysBound) {
+      window.__xmemeEditorKeysBound = true;
+      window.addEventListener("keydown", (e) => {
         if (!location.hash.includes("/create") && !location.hash.includes("/edit/")) return;
         const meta = e.metaKey || e.ctrlKey;
         if (meta && e.key.toLowerCase() === "z") {
@@ -402,9 +413,8 @@ window.CreatePage = {
           if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) return;
           MemeEditor.removeSelected();
         }
-      },
-      { once: false }
-    );
+      });
+    }
 
     await loadTemplates();
     syncLayerPanel();

@@ -11,7 +11,7 @@ services:
       API_PUBLIC_URL: http://localhost:8081
       FRONTEND_URL: http://localhost:8000
       SECRET_KEY: change-me-in-production
-      CORS_ORIGINS: "*"
+      CORS_ORIGINS: http://localhost:8000,http://localhost:8001
     volumes:
       - ./backend/uploads:/backend/uploads
       - ./backend/xmeme.db:/backend/xmeme.db

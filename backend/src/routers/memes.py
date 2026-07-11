@@ -19,15 +19,29 @@ def _page_params(page: int, page_size: Optional[int]) -> tuple[int, int]:
     return page, size
 
 
+def require_meme_owner(meme: models.Meme, user: models.User) -> None:
+    if meme.user_id is None or meme.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not allowed to modify this meme")
+
+
+def require_public_or_owner(meme: models.Meme, user: Optional[models.User]) -> None:
+    if meme.status == "draft":
+        if not user or meme.user_id != user.id:
+            raise HTTPException(status_code=404, detail="Meme not found")
+        return
+    if meme.visibility == "unlisted" or meme.status == "unlisted":
+        return
+    if meme.status != "published":
+        raise HTTPException(status_code=404, detail="Meme not found")
+
+
 @router.post("/memes", response_model=schemas.MemeOut, status_code=201)
 def create_meme(
     payload: schemas.MemeCreate,
     db: Session = Depends(get_db),
-    user: Optional[models.User] = Depends(get_current_user_optional),
+    user: models.User = Depends(get_current_user),
 ):
-    if payload.status == "draft" and not user:
-        raise HTTPException(status_code=401, detail="Login required to save drafts")
-    name = payload.name or (user.username if user else "Anonymous")
+    name = payload.name or user.username
     if payload.status != "draft" and crud.get_same_meme(db, name=name, url=payload.url, caption=payload.caption):
         raise HTTPException(status_code=409, detail="Meme already exists")
     meme = crud.create_meme(db, payload, user)
@@ -46,6 +60,8 @@ def list_memes(
     user: Optional[models.User] = Depends(get_current_user_optional),
 ):
     page, size = _page_params(page, page_size)
+    if following and not user:
+        raise HTTPException(status_code=401, detail="Login required for following feed")
     return crud.list_memes(
         db,
         page=page,
@@ -108,8 +124,7 @@ def update_meme(
     meme = crud.get_meme(db, meme_id)
     if not meme:
         raise HTTPException(status_code=404, detail="Meme not found")
-    if meme.user_id and meme.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not allowed to edit this meme")
+    require_meme_owner(meme, user)
     updated = crud.update_meme(db, meme, payload)
     return crud.serialize_meme(updated, user)
 
@@ -123,8 +138,7 @@ def delete_meme(
     meme = crud.get_meme(db, meme_id)
     if not meme:
         raise HTTPException(status_code=404, detail="Meme not found")
-    if meme.user_id and meme.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not allowed to delete this meme")
+    require_meme_owner(meme, user)
     crud.delete_meme(db, meme)
     return None
 
@@ -138,6 +152,7 @@ def like_meme(
     meme = crud.get_meme(db, meme_id)
     if not meme:
         raise HTTPException(status_code=404, detail="Meme not found")
+    require_public_or_owner(meme, user)
     liked, count = crud.toggle_like(db, meme, user)
     return {"liked": liked, "like_count": count}
 
@@ -152,22 +167,37 @@ def react_meme(
     meme = crud.get_meme(db, meme_id)
     if not meme:
         raise HTTPException(status_code=404, detail="Meme not found")
+    require_public_or_owner(meme, user)
     return crud.toggle_reaction(db, meme, user, emoji)
 
 
 @router.post("/memes/{meme_id}/share")
-def share_meme(meme_id: int, db: Session = Depends(get_db)):
+def share_meme(
+    meme_id: int,
+    db: Session = Depends(get_db),
+    user: Optional[models.User] = Depends(get_current_user_optional),
+):
     meme = crud.get_meme(db, meme_id)
     if not meme:
+        raise HTTPException(status_code=404, detail="Meme not found")
+    require_public_or_owner(meme, user)
+    if meme.status == "draft":
         raise HTTPException(status_code=404, detail="Meme not found")
     meme = crud.increment_share(db, meme)
     return {"share_count": meme.share_count}
 
 
 @router.post("/memes/{meme_id}/download")
-def download_meme(meme_id: int, db: Session = Depends(get_db)):
+def download_meme(
+    meme_id: int,
+    db: Session = Depends(get_db),
+    user: Optional[models.User] = Depends(get_current_user_optional),
+):
     meme = crud.get_meme(db, meme_id)
     if not meme:
+        raise HTTPException(status_code=404, detail="Meme not found")
+    require_public_or_owner(meme, user)
+    if meme.status == "draft":
         raise HTTPException(status_code=404, detail="Meme not found")
     meme = crud.increment_download(db, meme)
     return {"download_count": meme.download_count, "url": meme.url}
@@ -182,15 +212,20 @@ def analytics(
     meme = crud.get_meme(db, meme_id)
     if not meme:
         raise HTTPException(status_code=404, detail="Meme not found")
-    if meme.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Not allowed")
+    require_meme_owner(meme, user)
     return crud.meme_analytics(db, meme)
 
 
 @router.get("/memes/{meme_id}/comments", response_model=list[schemas.CommentOut])
-def get_comments(meme_id: int, db: Session = Depends(get_db)):
-    if not crud.get_meme(db, meme_id):
+def get_comments(
+    meme_id: int,
+    db: Session = Depends(get_db),
+    user: Optional[models.User] = Depends(get_current_user_optional),
+):
+    meme = crud.get_meme(db, meme_id)
+    if not meme:
         raise HTTPException(status_code=404, detail="Meme not found")
+    require_public_or_owner(meme, user)
     return crud.list_comments(db, meme_id)
 
 
@@ -203,6 +238,9 @@ def post_comment(
 ):
     meme = crud.get_meme(db, meme_id)
     if not meme:
+        raise HTTPException(status_code=404, detail="Meme not found")
+    require_public_or_owner(meme, user)
+    if meme.status == "draft":
         raise HTTPException(status_code=404, detail="Meme not found")
     try:
         comment = crud.add_comment(db, meme, user, payload.body.strip(), payload.parent_id)

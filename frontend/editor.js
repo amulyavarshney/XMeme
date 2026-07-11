@@ -155,7 +155,13 @@ const MemeEditor = (() => {
     return restore(snap);
   }
 
-  function reset() {
+  function reset(clearImage = false) {
+    if (clearImage) {
+      image = null;
+      imageUrl = "";
+      canvas.width = 800;
+      canvas.height = 800;
+    }
     layers = [];
     resetLayersDefault();
     filters = { ...FILTER_PRESETS.none, preset: "none" };

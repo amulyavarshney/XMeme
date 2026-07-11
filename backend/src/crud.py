@@ -207,24 +207,25 @@ def trending_memes(
     window: str = "all",
 ) -> schemas.PaginatedMemes:
     like_count = func.count(models.Like.id).label("like_count")
+    filters = [
+        models.Meme.status == "published",
+        models.Meme.visibility == "public",
+    ]
+    if window == "today":
+        filters.append(models.Meme.created_at >= func.datetime("now", "-1 day"))
+    elif window == "week":
+        filters.append(models.Meme.created_at >= func.datetime("now", "-7 day"))
+
+    total = db.query(func.count(models.Meme.id)).filter(*filters).scalar() or 0
+    pages = max(1, ceil(total / page_size)) if total else 0
+
     query = (
         db.query(models.Meme, like_count)
         .outerjoin(models.Like, models.Like.meme_id == models.Meme.id)
-        .filter(models.Meme.status == "published", models.Meme.visibility == "public")
+        .filter(*filters)
         .group_by(models.Meme.id)
+        .order_by(like_count.desc(), models.Meme.view_count.desc(), models.Meme.id.desc())
     )
-    if window == "today":
-        query = query.filter(models.Meme.created_at >= func.datetime("now", "-1 day"))
-    elif window == "week":
-        query = query.filter(models.Meme.created_at >= func.datetime("now", "-7 day"))
-
-    query = query.order_by(like_count.desc(), models.Meme.view_count.desc(), models.Meme.id.desc())
-    total = query.count()
-    # query.count() with group_by can be weird; fallback:
-    total = db.query(func.count(models.Meme.id)).filter(
-        models.Meme.status == "published", models.Meme.visibility == "public"
-    ).scalar() or 0
-    pages = max(1, ceil(total / page_size)) if total else 0
     rows = query.offset((page - 1) * page_size).limit(page_size).all()
     meme_ids = [row[0].id for row in rows]
     loaded = {m.id: m for m in _meme_query(db).filter(models.Meme.id.in_(meme_ids)).all()} if meme_ids else {}
@@ -274,7 +275,7 @@ def update_meme(db: Session, meme: models.Meme, data: schemas.MemeUpdate) -> mod
     payload = data.model_dump(exclude_unset=True)
     tags = payload.pop("tags", None)
     for field, value in payload.items():
-        if value is not None and value != "":
+        if value is not None:
             setattr(meme, field, value)
     if tags is not None:
         set_meme_tags(db, meme, tags)
@@ -311,6 +312,8 @@ def increment_download(db: Session, meme: models.Meme) -> models.Meme:
 
 
 def toggle_like(db: Session, meme: models.Meme, user: models.User) -> tuple[bool, int]:
+    from sqlalchemy.exc import IntegrityError
+
     existing = (
         db.query(models.Like)
         .filter(models.Like.meme_id == meme.id, models.Like.user_id == user.id)
@@ -324,7 +327,16 @@ def toggle_like(db: Session, meme: models.Meme, user: models.User) -> tuple[bool
         liked = True
         if meme.user_id:
             notify(db, meme.user_id, user.id, "like", f"@{user.username} liked your meme", meme.id)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        liked = (
+            db.query(models.Like)
+            .filter(models.Like.meme_id == meme.id, models.Like.user_id == user.id)
+            .first()
+            is not None
+        )
     count = db.query(func.count(models.Like.id)).filter(models.Like.meme_id == meme.id).scalar()
     return liked, count or 0
 
@@ -402,6 +414,10 @@ def get_user_profile(db: Session, username: str, current_user: Optional[models.U
     user = db.query(models.User).filter(models.User.username == username).first()
     if not user:
         return None
+    is_owner = current_user is not None and current_user.id == user.id
+    if user.is_private and not is_owner:
+        # Still return profile shell, but callers should hide memes
+        pass
     meme_count = (
         db.query(func.count(models.Meme.id))
         .filter(models.Meme.user_id == user.id, models.Meme.status == "published")
@@ -431,8 +447,8 @@ def get_user_profile(db: Session, username: str, current_user: Optional[models.U
         bio=user.bio or "",
         is_private=bool(user.is_private),
         created_at=user.created_at,
-        meme_count=meme_count,
-        like_count=like_count,
+        meme_count=meme_count if (not user.is_private or is_owner or followed_by_me) else 0,
+        like_count=like_count if (not user.is_private or is_owner or followed_by_me) else 0,
         follower_count=follower_count,
         following_count=following_count,
         followed_by_me=followed_by_me,

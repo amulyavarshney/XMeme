@@ -36,6 +36,9 @@ def user_memes(
     profile = crud.get_user_profile(db, username, current_user)
     if not profile:
         raise HTTPException(status_code=404, detail="User not found")
+    is_owner = current_user is not None and current_user.username == username
+    if profile.is_private and not is_owner and not profile.followed_by_me:
+        raise HTTPException(status_code=403, detail="This profile is private")
     size = page_size or settings.default_page_size
     size = min(max(1, size), settings.max_page_size)
     return crud.list_memes(

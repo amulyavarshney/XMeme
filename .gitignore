@@ -9,6 +9,11 @@ backend/uploads/**
 !backend/uploads/.gitkeep
 !backend/uploads/templates/
 !backend/uploads/templates/.gitkeep
+backend/xmeme.db
+backend/xmeme.db-*
+*.db-journal
+*.db-wal
+*.db-shm
 
 .pytest_cache/
 .mypy_cache/

@@ -15,10 +15,11 @@ class Settings(BaseSettings):
     upload_dir: str = "uploads"
     api_public_url: str = "http://localhost:8081"
     frontend_url: str = "http://localhost:8000"
-    cors_origins: str = "*"
+    cors_origins: str = "http://localhost:8000,http://localhost:8001"
     default_page_size: int = 12
     max_page_size: int = 50
     max_upload_bytes: int = 8 * 1024 * 1024
+    giphy_api_key: str = ""
 
     @property
     def upload_path(self) -> Path:

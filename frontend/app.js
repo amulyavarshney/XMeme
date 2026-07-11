@@ -64,7 +64,7 @@
   function memeCard(meme, index = 0) {
     const img = API.resolveUrl(meme.url);
     const author = meme.username || meme.name;
-    const canEdit = currentUser && (!meme.user_id || meme.user_id === currentUser.id);
+    const canEdit = currentUser && meme.user_id === currentUser.id;
     const tags = (meme.tags || [])
       .map((t) => `<a class="tag" href="#/tag/${escapeHtml(t)}">#${escapeHtml(t)}</a>`)
       .join(" ");
@@ -246,10 +246,17 @@
     });
   }
 
-  function openEdit(id) {
+  async function openEdit(id) {
     editingId = id;
     document.getElementById("edit-form").reset();
     setStatus(document.getElementById("edit-status"), "");
+    try {
+      const meme = await API.get(`/memes/${id}`);
+      document.getElementById("edit_url").value = meme.url || "";
+      document.getElementById("edit_caption").value = meme.caption || "";
+    } catch (err) {
+      setStatus(document.getElementById("edit-status"), err.message, "error");
+    }
     document.getElementById("edit-dialog").showModal();
   }
 
@@ -330,7 +337,7 @@
       const shareApi = `${API.base}/share/${meme.id}`;
       const shareApp = `${location.origin}${location.pathname}#/meme/${meme.id}`;
       const author = meme.username || meme.name;
-      const canEdit = currentUser && (!meme.user_id || meme.user_id === currentUser.id);
+      const canEdit = currentUser && meme.user_id === currentUser.id;
       const reactions = ["😂", "🔥", "💀", "👀", "✨"];
       const media =
         meme.media_type === "video"
@@ -592,7 +599,10 @@
     const [head, id] = parts;
     if (!head) return renderFeed("latest", 1);
     if (head === "trending") return renderFeed("trending", 1, { window: params.window || "all" });
-    if (head === "following") return renderFeed("following", 1);
+    if (head === "following") {
+      if (!currentUser) return navigate("/login");
+      return renderFeed("following", 1);
+    }
     if (head === "search") return renderFeed("latest", 1, { q: params.q || "" });
     if (head === "tag" && id) return renderFeed("latest", 1, { tag: id });
     if (head === "collection" && id) return renderFeed("latest", 1, { collection: id });

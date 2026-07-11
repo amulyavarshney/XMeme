@@ -150,11 +150,7 @@ def use_template(
 @router.get("/stock/search", response_model=list[schemas.StockImage])
 def stock_search(q: str = Query(..., min_length=1), limit: int = Query(12, ge=1, le=24)):
     """Search Giphy when GIPHY_API_KEY is set; otherwise return curated placeholders."""
-    key = getattr(settings, "giphy_api_key", None) or ""
-    # allow env via settings extra - add to config
-    import os
-
-    key = os.getenv("GIPHY_API_KEY", "")
+    key = settings.giphy_api_key
     if key:
         try:
             url = f"https://api.giphy.com/v1/gifs/search?api_key={quote(key)}&q={quote(q)}&limit={limit}&rating=pg-13"
