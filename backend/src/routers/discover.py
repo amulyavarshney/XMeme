@@ -262,3 +262,56 @@ def report(
     )
     db.commit()
     return {"ok": True}
+
+
+def _require_admin(user: models.User) -> None:
+    admins = get_settings().admin_username_set
+    if not admins or user.username.lower() not in admins:
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+
+@router.get("/admin/reports")
+def list_reports(
+    status_filter: str | None = Query(None, alias="status"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    _require_admin(user)
+    query = db.query(models.Report).order_by(models.Report.created_at.desc())
+    if status_filter:
+        query = query.filter(models.Report.status == status_filter)
+    total = query.count()
+    rows = query.offset(skip).limit(limit).all()
+    return {
+        "total": total,
+        "items": [
+            {
+                "id": r.id,
+                "reporter_id": r.reporter_id,
+                "meme_id": r.meme_id,
+                "comment_id": r.comment_id,
+                "reason": r.reason,
+                "status": r.status,
+                "created_at": r.created_at,
+            }
+            for r in rows
+        ],
+    }
+
+
+@router.patch("/admin/reports/{report_id}")
+def update_report(
+    report_id: int,
+    status: str = Query(..., pattern="^(open|reviewed|resolved|dismissed)$"),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    _require_admin(user)
+    report_row = db.query(models.Report).filter(models.Report.id == report_id).first()
+    if not report_row:
+        raise HTTPException(status_code=404, detail="Report not found")
+    report_row.status = status
+    db.commit()
+    return {"ok": True, "id": report_id, "status": status}

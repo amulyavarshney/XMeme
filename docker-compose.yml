@@ -1,24 +1,62 @@
-version: "3.8"
-
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: xmeme
+      POSTGRES_USER: xmeme
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-xmeme_dev_password}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U xmeme -d xmeme"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
     build: ./backend
+    environment:
+      # Use ENVIRONMENT=production + public HTTPS URLs from .env.production.example for real deploys.
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      SECRET_KEY: ${SECRET_KEY:-local-docker-compose-secret-change-me-32}
+      DATABASE_URL: postgresql+psycopg2://xmeme:${POSTGRES_PASSWORD:-xmeme_dev_password}@db:5432/xmeme
+      UPLOAD_DIR: uploads
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-http://localhost:8081}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8000}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}
+      ADMIN_USERNAMES: ${ADMIN_USERNAMES:-}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-*}
+      SEED_ON_STARTUP: ${SEED_ON_STARTUP:-true}
+      ENABLE_DOCS: ${ENABLE_DOCS:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      GIPHY_API_KEY: ${GIPHY_API_KEY:-}
+    volumes:
+      - uploads:/backend/uploads
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8081:8081"
-    environment:
-      DATABASE_URL: sqlite:///./xmeme.db
-      UPLOAD_DIR: uploads
-      API_PUBLIC_URL: http://localhost:8081
-      FRONTEND_URL: http://localhost:8000
-      SECRET_KEY: change-me-in-production
-      CORS_ORIGINS: http://localhost:8000,http://localhost:8001
-    volumes:
-      - ./backend/uploads:/backend/uploads
-      - ./backend/xmeme.db:/backend/xmeme.db
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8081/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
 
   web:
     build: ./frontend
+    environment:
+      XMEME_API_BASE: ${XMEME_API_BASE:-/api}
+      XMEME_PAGE_SIZE: ${XMEME_PAGE_SIZE:-12}
     ports:
       - "8000:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  uploads:

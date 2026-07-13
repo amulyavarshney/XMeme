@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -11,9 +11,12 @@ from ..auth import (
     hash_password,
     verify_password,
 )
+from ..config import get_settings
 from ..database import get_db
+from ..rate_limit import limiter
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
+settings = get_settings()
 
 
 def _me_payload(db: Session, user: models.User) -> schemas.UserMe:
@@ -26,7 +29,8 @@ def _me_payload(db: Session, user: models.User) -> schemas.UserMe:
 
 
 @router.post("/register", response_model=schemas.UserMe, status_code=201)
-def register(payload: schemas.UserCreate, db: Session = Depends(get_db)):
+@limiter.limit(settings.auth_rate_limit)
+def register(request: Request, payload: schemas.UserCreate, db: Session = Depends(get_db)):
     if get_user_by_username(db, payload.username):
         raise HTTPException(status_code=409, detail="Username already taken")
     if get_user_by_email(db, payload.email):
@@ -45,7 +49,9 @@ def register(payload: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=schemas.Token)
+@limiter.limit(settings.auth_rate_limit)
 def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):

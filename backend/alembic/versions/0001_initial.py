@@ -1,0 +1,24 @@
+"""Initial schema baseline.
+
+Revision ID: 0001_initial
+Revises:
+Create Date: 2026-07-13
+"""
+
+from alembic import op
+import sqlalchemy as sa
+
+revision = "0001_initial"
+down_revision = None
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    # Schema is managed by SQLAlchemy create_all + migrate.py for existing installs.
+    # This revision marks the baseline for future Alembic migrations.
+    pass
+
+
+def downgrade() -> None:
+    pass

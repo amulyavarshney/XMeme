@@ -1,0 +1,4 @@
+docker-entrypoint.sh
+nginx.dev.conf
+dockerfile
+.dockerignore

@@ -1,117 +1,112 @@
 # XMeme
 
-Create, share, and discover memes — with a canvas editor, auth, likes, comments, and trending.
+Create, share, and discover memes — canvas studio, auth, social, and production deploy tooling.
 
 ## Stack
 
 | Layer | Tech |
 |-------|------|
-| Frontend | Vanilla HTML/CSS/JS (hash SPA) |
-| Backend | FastAPI, SQLAlchemy 2, Pydantic v2 |
-| Auth | JWT (Bearer) |
-| Database | SQLite (configurable via `DATABASE_URL`) |
-| Media | Local uploads served at `/uploads` |
+| Frontend | Vanilla HTML/CSS/JS (hash SPA) + nginx |
+| Backend | FastAPI, SQLAlchemy 2, Pydantic v2, Gunicorn/Uvicorn |
+| Auth | JWT Bearer |
+| Database | SQLite (dev) / PostgreSQL (production) |
+| Media | Local uploads volume (swap for object storage later) |
 
-## Features
-
-- **Foundation** — pagination, timestamps, delete, Docker Compose, upgraded deps
-- **Create** — image upload + canvas meme editor (text overlays, templates)
-- **Share** — per-meme pages, OG meta (`/share/{id}`), copy-link / X / Reddit
-- **Social** — register/login, likes, comments, profiles, trending
-
-## Quick start
-
-### Backend
+## Local development
 
 ```bash
 cd backend
-python3 -m venv .venv
-source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # optional
+cp .env.example .env
 python3 app.py
 ```
 
-- API + Swagger: http://localhost:8081/
-- ReDoc: http://localhost:8081/doc
-- Health: http://localhost:8081/health
-
-### Frontend
-
 ```bash
 cd frontend
-python3 -m http.server 8000
+python3 -m http.server 8001
 ```
 
-Open http://localhost:8000
+- UI: http://localhost:8001
+- API: http://localhost:8081
+- Health: http://localhost:8081/health
+- Ready: http://localhost:8081/ready
 
-Override the API base if needed:
-
-```html
-<script>window.XMEME_API_BASE = "http://localhost:8081";</script>
-```
-
-## Docker Compose
+### Dev Docker (SQLite)
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.dev.yml up --build
 ```
 
-- Web: http://localhost:8000
+## Production deploy
+
+1. Copy `.env.production.example` → `.env` and set strong values:
+
+```bash
+openssl rand -hex 32   # SECRET_KEY
+```
+
+Required production settings:
+- `SECRET_KEY` — 32+ character random secret (app refuses insecure defaults)
+- `DATABASE_URL` — PostgreSQL (SQLite blocked in production)
+- `API_PUBLIC_URL` / `FRONTEND_URL` — public HTTPS URLs (not localhost)
+- `CORS_ORIGINS` — explicit origins (not `*`)
+- `ADMIN_USERNAMES` — comma-separated usernames for `/admin/reports`
+
+Local prod-like stack (Postgres + nginx proxy) defaults to `ENVIRONMENT=development` so localhost URLs work. For a real deploy, set `ENVIRONMENT=production` and public HTTPS URLs in `.env`.
+
+2. Launch:
+
+```bash
+docker compose up --build -d
+```
+
+- Web: http://localhost:8000 (proxies `/api` → API)
 - API: http://localhost:8081
 
-## API overview
+Frontend `config.js` is generated at container start with `XMEME_API_BASE=/api` so the browser talks same-origin through nginx.
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| `POST` | `/auth/register` | — | Create account |
-| `POST` | `/auth/login` | — | OAuth2 password → JWT |
-| `GET` | `/auth/me` | ✓ | Current user |
-| `GET` | `/memes?page=&page_size=` | optional | Paginated feed |
-| `GET` | `/memes/trending` | optional | Trending by likes/views |
-| `POST` | `/memes` | optional | Create meme |
-| `GET` | `/memes/{id}` | optional | Meme detail (`track_view=true`) |
-| `PATCH` | `/memes/{id}` | ✓ | Update (owner) |
-| `DELETE` | `/memes/{id}` | ✓ | Delete (owner) |
-| `POST` | `/memes/{id}/like` | ✓ | Toggle like |
-| `GET/POST` | `/memes/{id}/comments` | POST ✓ | Comments |
-| `POST` | `/upload` | ✓ | Upload image |
-| `GET` | `/templates` | — | Editor templates |
-| `GET` | `/users/{username}` | — | Profile |
-| `GET` | `/share/{id}` | — | HTML + Open Graph tags |
+### Production checklist
 
-## Project layout
+- [ ] Strong `SECRET_KEY` and `POSTGRES_PASSWORD`
+- [ ] HTTPS termination (Cloudflare / load balancer / Traefik)
+- [ ] Persistent volumes for Postgres + uploads
+- [ ] Backups for Postgres and uploads
+- [ ] Set `ENABLE_DOCS=false` (default in compose)
+- [ ] Monitor `/ready` and `/live`
+- [ ] Optional: set `GIPHY_API_KEY` for stock search
+- [ ] Replace local uploads with S3/GCS when scaling
 
-```
-XMeme/
-├── backend/
-│   ├── app.py
-│   ├── requirements.txt
-│   ├── .env.example
-│   ├── uploads/
-│   └── src/
-│       ├── main.py
-│       ├── config.py
-│       ├── models.py
-│       ├── schemas.py
-│       ├── auth.py
-│       ├── crud.py
-│       └── routers/
-└── frontend/
-    ├── index.html
-    ├── app.js
-    ├── api.js
-    ├── editor.js
-    ├── config.js
-    └── style.css
+## API highlights
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `GET` | `/health` | Liveness-ish status |
+| `GET` | `/ready` | DB connectivity |
+| `GET` | `/live` | Process alive |
+| `POST` | `/auth/register` | Rate limited |
+| `POST` | `/auth/login` | Rate limited |
+| `POST` | `/upload` | Auth + magic-byte validation + rate limit |
+| `GET` | `/memes` | Paginated feed |
+| `GET` | `/admin/reports` | Moderation queue (auth required) |
+
+## Tests / CI
+
+```bash
+cd backend
+pytest -q
 ```
 
-## Environment
+GitHub Actions runs the same suite on push/PR (`.github/workflows/ci.yml`).
 
-See `backend/.env.example`:
+## Migrations
 
-- `SECRET_KEY` — JWT signing key
-- `DATABASE_URL` — SQLAlchemy URL
-- `API_PUBLIC_URL` — public API origin (upload URLs + OG)
-- `FRONTEND_URL` — used in share redirects
-- `CORS_ORIGINS` — `*` or comma-separated list
+Alembic is wired for forward migrations:
+
+```bash
+cd backend
+alembic upgrade head
+alembic revision --autogenerate -m "describe change"
+```
+
+Startup still runs `create_all` + lightweight SQLite column patches for older local DBs.
