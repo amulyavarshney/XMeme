@@ -1,18 +1,37 @@
 # XMeme
 
-Create, share, and discover memes — canvas studio, auth, social, and production deploy tooling.
+[![CI](https://github.com/amulyavarshney/XMeme/actions/workflows/ci.yml/badge.svg)](https://github.com/amulyavarshney/XMeme/actions/workflows/ci.yml)
+[![Pages](https://github.com/amulyavarshney/XMeme/actions/workflows/pages.yml/badge.svg)](https://github.com/amulyavarshney/XMeme/actions/workflows/pages.yml)
+[![Live demo](https://img.shields.io/badge/demo-GitHub%20Pages-0f9f8a?logo=github)](https://amulyavarshney.github.io/XMeme/)
 
-## Stack
+**Create, share, and discover memes** — canvas studio, auth, social feeds, and production-ready Docker deploy.
 
-| Layer | Tech |
-|-------|------|
-| Frontend | Vanilla HTML/CSS/JS (hash SPA) + nginx |
-| Backend | FastAPI, SQLAlchemy 2, Pydantic v2, Gunicorn/Uvicorn |
-| Auth | JWT Bearer |
-| Database | SQLite (dev) / PostgreSQL (production) |
-| Media | Local uploads volume (swap for object storage later) |
+| Try it | URL |
+|--------|-----|
+| **Live UI** | [amulyavarshney.github.io/XMeme](https://amulyavarshney.github.io/XMeme/) |
+| **Local API** | `http://localhost:8081` (pair with the live UI or local frontend) |
+| **Health** | `GET /health` · `GET /ready` · `GET /live` |
 
-## Local development
+> GitHub Pages hosts the **frontend only**. Point it at a local (or hosted) API — the UI shows an offline banner until `/health` responds.
+
+---
+
+## Contents
+
+- [Quick start](#quick-start)
+- [Pair Pages UI with local API](#pair-pages-ui-with-local-api)
+- [Docker](#docker)
+- [What you get](#what-you-get)
+- [API snapshot](#api-snapshot)
+- [Tests & CI](#tests--ci)
+- [Production](#production)
+
+---
+
+## Quick start
+
+<details open>
+<summary><strong>1. Backend</strong> (terminal A)</summary>
 
 ```bash
 cd backend
@@ -22,86 +41,110 @@ cp .env.example .env
 python3 app.py
 ```
 
+API → [http://localhost:8081](http://localhost:8081) · docs → [http://localhost:8081/](http://localhost:8081/)
+
+</details>
+
+<details open>
+<summary><strong>2. Frontend</strong> (terminal B)</summary>
+
 ```bash
 cd frontend
 python3 -m http.server 8001
 ```
 
-- UI: http://localhost:8001
-- API: http://localhost:8081
-- Health: http://localhost:8081/health
-- Ready: http://localhost:8081/ready
+UI → [http://localhost:8001](http://localhost:8001)
 
-### Dev Docker (SQLite)
+</details>
+
+<details>
+<summary><strong>One-liner with Docker (SQLite)</strong></summary>
 
 ```bash
 docker compose -f docker-compose.dev.yml up --build
 ```
 
-## Production deploy
+- UI: [http://localhost:8000](http://localhost:8000)
+- API: [http://localhost:8081](http://localhost:8081)
 
-1. Copy `.env.production.example` → `.env` and set strong values:
+</details>
 
-```bash
-openssl rand -hex 32   # SECRET_KEY
+---
+
+## Pair Pages UI with local API
+
+1. Start the backend (`python3 app.py` in `backend/`).
+2. Open [the live demo](https://amulyavarshney.github.io/XMeme/).
+3. Ensure CORS allows the Pages origin in `backend/.env`:
+
+```env
+CORS_ORIGINS=http://localhost:8000,http://localhost:8001,https://amulyavarshney.github.io
+FRONTEND_URL=https://amulyavarshney.github.io/XMeme
 ```
 
-Required production settings:
-- `SECRET_KEY` — 32+ character random secret (app refuses insecure defaults)
-- `DATABASE_URL` — PostgreSQL (SQLite blocked in production)
-- `API_PUBLIC_URL` / `FRONTEND_URL` — public HTTPS URLs (not localhost)
-- `CORS_ORIGINS` — explicit origins (not `*`)
-- `ADMIN_USERNAMES` — comma-separated usernames for `/admin/reports`
+The browser talks to `http://localhost:8081` from the Pages UI (see `frontend/config.js`).
 
-Local prod-like stack (Postgres + nginx proxy) defaults to `ENVIRONMENT=development` so localhost URLs work. For a real deploy, set `ENVIRONMENT=production` and public HTTPS URLs in `.env`.
+---
 
-2. Launch:
+## Docker
+
+| Compose file | Use when |
+|--------------|----------|
+| `docker-compose.dev.yml` | Local SQLite + reload |
+| `docker-compose.yml` | Postgres + Gunicorn + nginx `/api` proxy |
 
 ```bash
+# Prod-like stack
+cp .env.production.example .env   # set SECRET_KEY, etc.
 docker compose up --build -d
 ```
 
-- Web: http://localhost:8000 (proxies `/api` → API)
-- API: http://localhost:8081
+---
 
-Frontend `config.js` is generated at container start with `XMEME_API_BASE=/api` so the browser talks same-origin through nginx.
+## What you get
 
-### Production checklist
+- **Studio** — multi-layer text, stickers, filters, crop, undo/redo, drafts, templates
+- **Share** — per-meme pages, Open Graph tags, copy / social / download
+- **Social** — likes, reactions, nested comments, follows, notifications, tags, trending
+- **Ops** — JWT auth, rate limits, security headers, Alembic, health checks, CI + Pages deploy
 
-- [ ] Strong `SECRET_KEY` and `POSTGRES_PASSWORD`
-- [ ] HTTPS termination (Cloudflare / load balancer / Traefik)
-- [ ] Persistent volumes for Postgres + uploads
-- [ ] Backups for Postgres and uploads
-- [ ] Set `ENABLE_DOCS=false` (default in compose)
-- [ ] Monitor `/ready` and `/live`
-- [ ] Optional: set `GIPHY_API_KEY` for stock search
-- [ ] Replace local uploads with S3/GCS when scaling
+---
 
-## API highlights
+## API snapshot
 
 | Method | Path | Notes |
 |--------|------|-------|
-| `GET` | `/health` | Liveness-ish status |
-| `GET` | `/ready` | DB connectivity |
-| `GET` | `/live` | Process alive |
-| `POST` | `/auth/register` | Rate limited |
-| `POST` | `/auth/login` | Rate limited |
-| `POST` | `/upload` | Auth + magic-byte validation + rate limit |
+| `GET` | `/health` `/ready` `/live` | Probe endpoints |
+| `POST` | `/auth/register` `/auth/login` | Rate limited |
 | `GET` | `/memes` | Paginated feed |
-| `GET` | `/admin/reports` | Moderation queue (auth required) |
+| `POST` | `/upload` | Auth + magic-byte sniff |
+| `GET` | `/admin/reports` | Set `ADMIN_USERNAMES` |
 
-## Tests / CI
+Full interactive docs when `ENABLE_DOCS=true` (default in development).
+
+---
+
+## Tests & CI
 
 ```bash
-cd backend
-pytest -q
+cd backend && pytest -q
 ```
 
-GitHub Actions runs the same suite on push/PR (`.github/workflows/ci.yml`).
+- CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+- Pages: [`.github/workflows/pages.yml`](.github/workflows/pages.yml) → [live site](https://amulyavarshney.github.io/XMeme/)
 
-## Migrations
+---
 
-Alembic is wired for forward migrations:
+## Production
+
+1. Copy [`.env.production.example`](.env.production.example) → `.env`
+2. Set a strong `SECRET_KEY` (`openssl rand -hex 32`)
+3. Use Postgres, public HTTPS URLs, explicit `CORS_ORIGINS`
+4. `docker compose up --build -d`
+
+Checklist: HTTPS · volume backups · `ENABLE_DOCS=false` · monitor `/ready` · optional object storage for uploads.
+
+### Migrations
 
 ```bash
 cd backend
@@ -109,4 +152,15 @@ alembic upgrade head
 alembic revision --autogenerate -m "describe change"
 ```
 
-Startup still runs `create_all` + lightweight SQLite column patches for older local DBs.
+Startup also runs `create_all` plus lightweight SQLite column patches for older local DBs.
+
+---
+
+## Stack
+
+| Layer | Tech |
+|-------|------|
+| Frontend | Vanilla HTML/CSS/JS (hash SPA), nginx, GitHub Pages |
+| Backend | FastAPI, SQLAlchemy 2, Pydantic v2, Gunicorn |
+| Auth | JWT Bearer |
+| DB | SQLite (dev) / PostgreSQL (prod) |

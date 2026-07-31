@@ -69,39 +69,6 @@ def create_template(
     )
 
 
-@router.get("/templates/recent", response_model=list[schemas.TemplateOut])
-def recent_templates(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
-    rows = (
-        db.query(models.TemplateRecent)
-        .filter(models.TemplateRecent.user_id == user.id)
-        .order_by(models.TemplateRecent.used_at.desc())
-        .limit(12)
-        .all()
-    )
-    fav_ids = {
-        f.template_id
-        for f in db.query(models.TemplateFavorite).filter(models.TemplateFavorite.user_id == user.id)
-    }
-    out = []
-    for r in rows:
-        t = db.query(models.Template).filter(models.Template.id == r.template_id).first()
-        if not t:
-            continue
-        out.append(
-            schemas.TemplateOut(
-                id=t.id,
-                name=t.name,
-                image_url=t.image_url,
-                description=t.description or "",
-                category=t.category or "blank",
-                user_id=t.user_id,
-                is_public=bool(t.is_public),
-                favorited=t.id in fav_ids,
-            )
-        )
-    return out
-
-
 @router.post("/templates/{template_id}/favorite")
 def favorite_template(
     template_id: int,

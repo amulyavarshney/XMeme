@@ -37,6 +37,28 @@ body {
   flex-direction: column;
 }
 
+.api-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  margin: 0 auto 1rem;
+  max-width: var(--max);
+  padding: 0.85rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--amber) 55%, var(--line));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--amber) 12%, var(--surface));
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.api-banner code {
+  font-size: 0.9em;
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
 .page-bg {
   position: fixed;
   inset: 0;
@@ -450,13 +472,6 @@ input:focus {
   background: #1a1f2b;
   touch-action: none;
   cursor: grab;
-}
-
-.editor-toolbar,
-.editor-texts {
-  display: grid;
-  gap: 0.85rem;
-  margin: 1rem 0;
 }
 
 .template-grid {

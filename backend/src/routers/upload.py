@@ -21,7 +21,7 @@ ALLOWED_TYPES = {
 }
 
 
-def sniff_media(data: bytes, claimed: str) -> str:
+def sniff_media(data: bytes) -> str:
     if data.startswith(b"\xff\xd8\xff"):
         return "image/jpeg"
     if data.startswith(b"\x89PNG\r\n\x1a\n"):
@@ -48,7 +48,7 @@ async def upload_image(
     if not data:
         raise HTTPException(status_code=400, detail="Empty file")
 
-    content_type = sniff_media(data, file.content_type or "")
+    content_type = sniff_media(data)
     if content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=400, detail="Allowed: JPEG, PNG, GIF, WebP, MP4, WebM")
 

@@ -1,0 +1,60 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build static site
+        run: |
+          mkdir -p _site
+          cp -R frontend/. _site/
+          touch _site/.nojekyll
+          # Project Pages live at /XMeme/ — pin asset resolution.
+          python3 - <<'PY'
+          from pathlib import Path
+          index = Path("_site/index.html")
+          html = index.read_text()
+          if "<base " not in html:
+              html = html.replace("<head>", '<head>\n  <base href="/XMeme/">', 1)
+              index.write_text(html)
+          Path("_site/config.js").write_text(
+              """window.XMEME_CONFIG = {
+  apiBase: window.XMEME_API_BASE || "http://localhost:8081",
+  pageSize: 12,
+  siteBase: "/XMeme",
+};
+"""
+          )
+          print("Prepared Pages site for /XMeme/")
+          PY
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

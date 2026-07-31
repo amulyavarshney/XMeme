@@ -1,9 +1,8 @@
 (() => {
   const app = document.getElementById("app");
   let currentUser = null;
-  let feedPage = 1;
-  let feedMode = "latest";
   let editingId = null;
+  let apiOnline = null;
 
   const escapeHtml = (v) =>
     String(v)
@@ -100,7 +99,7 @@
       </article>`;
   }
 
-  function pager(page, pages, baseHash) {
+  function pager(page, pages) {
     if (!pages || pages <= 1) return "";
     return `
       <div class="pager">
@@ -110,9 +109,28 @@
       </div>`;
   }
 
+  function apiBanner() {
+    if (apiOnline !== false) return "";
+    return `
+      <aside class="api-banner" role="status">
+        <strong>API offline</strong>
+        <span>UI is live on GitHub Pages. Start the backend locally on
+          <code>localhost:8081</code> (and allow CORS for this origin) to load memes.
+        </span>
+        <a class="btn btn-ghost btn-sm" href="https://github.com/amulyavarshney/XMeme#quick-start" target="_blank" rel="noopener">Setup guide</a>
+      </aside>`;
+  }
+
+  async function probeApi() {
+    try {
+      const res = await fetch(`${API.base}/health`, { cache: "no-store" });
+      apiOnline = res.ok;
+    } catch {
+      apiOnline = false;
+    }
+  }
+
   async function renderFeed(mode = "latest", page = 1, extras = {}) {
-    feedMode = mode;
-    feedPage = page;
     const windowParam = extras.window || "all";
     const title =
       mode === "trending"
@@ -125,6 +143,7 @@
               ? `Search: ${extras.q}`
               : "Meme stream";
     app.innerHTML = `
+      ${apiBanner()}
       <section class="hero compact">
         <p class="hero-brand">XMeme</p>
         <h1>${mode === "trending" ? "What’s catching fire" : "Post it. Share it. Make it viral."}</h1>
@@ -658,5 +677,5 @@
   };
 
   window.addEventListener("hashchange", route);
-  refreshUser().then(route);
+  Promise.all([probeApi(), refreshUser()]).then(route);
 })();
