@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base href="/XMeme/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="XMeme — create, share, and discover memes.">
+  <title>XMeme</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=4">
+</head>
+<body>
+  <div class="page-bg" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="#/">
+      <img src="images/logo.png" alt="" width="40" height="40">
+      <span>XMeme</span>
+    </a>
+    <nav class="site-nav" id="site-nav">
+      <a href="#/">Stream</a>
+      <a href="#/trending">Trending</a>
+      <a href="#/following">Following</a>
+      <a href="#/create">Create</a>
+      <a href="#/notifications" data-auth="user" hidden>Alerts</a>
+      <a href="#/login" data-auth="guest">Log in</a>
+      <a href="#/register" data-auth="guest">Sign up</a>
+      <a href="#/profile" data-auth="user" class="nav-user" hidden></a>
+      <button type="button" class="btn btn-ghost btn-sm" id="theme-btn" title="Toggle theme">Theme</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="logout-btn" data-auth="user" hidden>Log out</button>
+    </nav>
+  </header>
+
+  <main id="app" class="app" aria-live="polite"></main>
+
+  <footer class="site-footer">
+    <p><strong>XMeme</strong> — create, share, go viral</p>
+  </footer>
+
+  <dialog id="edit-dialog" class="edit-dialog">
+    <form id="edit-form">
+      <header>
+        <h2>Edit meme</h2>
+        <button type="button" class="dialog-close" id="edit-close" aria-label="Close">&times;</button>
+      </header>
+      <label>
+        <span>New URL</span>
+        <input type="url" id="edit_url" placeholder="https://…">
+      </label>
+      <label>
+        <span>New caption</span>
+        <input type="text" id="edit_caption" maxlength="280" placeholder="Updated caption">
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-ghost" id="edit-cancel">Cancel</button>
+      </div>
+      <p id="edit-status" class="form-status" role="status"></p>
+    </form>
+  </dialog>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="editor.js"></script>
+  <script src="create-page.js"></script>
+  <script src="app.js" defer></script>
+</body>
+</html>

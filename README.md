@@ -12,7 +12,27 @@
 | **Local API** | `http://localhost:8081` (pair with the live UI or local frontend) |
 | **Health** | `GET /health` · `GET /ready` · `GET /live` |
 
-> GitHub Pages hosts the **frontend only**. Point it at a local (or hosted) API — the UI shows an offline banner until `/health` responds.
+> GitHub Pages hosts the **frontend only** from **this** repo (`XMeme`), not from `amulyavarshney.github.io`. Point the UI at a local (or hosted) API — an offline banner appears until `/health` responds.
+
+### Publish the site
+
+From a machine that can push to GitHub:
+
+```bash
+# Option A — orphan gh-pages branch (recommended)
+./scripts/deploy-pages.sh
+
+# Then: GitHub → Settings → Pages → Deploy from branch → gh-pages / (root)
+```
+
+```bash
+# Option B — /docs on master (already built into docs/)
+git add docs && git commit -m "Update Pages site" && git push origin master
+
+# Then: GitHub → Settings → Pages → Deploy from branch → master / docs
+```
+
+Option C: GitHub Actions workflow [`.github/workflows/pages.yml`](.github/workflows/pages.yml) (Settings → Pages → Source: **GitHub Actions**).
 
 ---
 
